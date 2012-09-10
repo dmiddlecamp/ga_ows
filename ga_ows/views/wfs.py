@@ -293,13 +293,13 @@ class GeoDjangoWFSAdapter(WFSAdapter):
         geometry_field = self.geometries[type_names[0]]
         query_set = model.objects.all()
 
-        if bbox:
+        if bbox and bbox != (-180, -90, 180, 90):
             mnx, mny, mxx, mxy = bbox
-            query_set.filter(**{ geometry_field.name + "__bboverlaps" :
+            query_set = query_set.filter(**{ geometry_field.name + "__bboverlaps" :
                 "POLYGON(({mnx} {mny}, {mxx} {mny}, {mxx} {mxy}, {mnx} {mxy}, {mnx} {mny}))".format(
-                    mnx=mnx, 
-                    mny=mny, 
-                    mxx=mxx, 
+                    mnx=mnx,
+                    mny=mny,
+                    mxx=mxx,
                     mxy=mxy)
             })
 
