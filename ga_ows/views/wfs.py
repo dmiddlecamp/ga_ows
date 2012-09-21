@@ -64,8 +64,8 @@ class PresentationParameters(RequestForm):
     @classmethod
     def from_request(cls, request):
         request['count'] = int(request.get('count', '1'))
-        request['start_index'] = int(request.get('startindex','1'))
-        request['max_features'] = int(request.get('maxfeatures', '1'))
+        request['start_index'] = int(request.get('startindex','0'))
+        request['max_features'] = int(request.get('maxfeatures', '100'))
         request['output_format'] = request.get('outputformat',"application/gml+xml; version=3.2")
 
 class AdHocQueryParameters(RequestForm):
