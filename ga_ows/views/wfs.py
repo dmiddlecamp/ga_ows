@@ -291,7 +291,7 @@ class GeoDjangoWFSAdapter(WFSAdapter):
         start_index = parms.cleaned_data['start_index']
         srs_name = parms.cleaned_data['srs_name'] # assume bbox is in this
         srs_format = parms.cleaned_data['srs_format'] # this can be proj, None (srid), srid, or wkt.
-        d_to = parms.cleaned_data['distance_to'] # this is a json 'point' and 'distance' 
+        d_to = parms.cleaned_data['distance_to'] # this is a WKT point
         
         model = self.models[type_names[0]] # support only the first type-name for now.
         geometry_field = self.geometries[type_names[0]]
@@ -312,6 +312,7 @@ class GeoDjangoWFSAdapter(WFSAdapter):
             query_set = query_set.filter(**flt)
 
         if d_to:
+            # see: https://docs.djangoproject.com/en/dev/ref/contrib/gis/geoquerysets/#distance
             query_set = query_set.distance(GEOSGeometry(d_to))
 
         if sort_by and ',' in sort_by:
