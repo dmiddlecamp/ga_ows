@@ -32,6 +32,7 @@ from ga_ows.utils import MultipleValueField, BBoxField, CaseInsensitiveDict
 from lxml import etree
 from ga_ows.views.common import RequestForm, CommonParameters, GetCapabilitiesMixin
 from osgeo import ogr
+from django.contrib.gis.geos import GEOSGeometry
 from django.conf import settings
 from tempfile import gettempdir
 from django.db import connections
@@ -76,6 +77,7 @@ class AdHocQueryParameters(RequestForm):
     resource_id = f.CharField(required=False)
     bbox = BBoxField()
     sort_by = f.CharField(required=False)
+    distance_to = f.CharField(required=False)
 
     @classmethod
     def from_request(cls, request):
@@ -86,6 +88,7 @@ class AdHocQueryParameters(RequestForm):
         request['resource_id'] = request.get('resource_id')
         request['bbox'] = request.get('bbox')
         request['sort_by'] = request.get('sortby')
+        request['distance_to'] = request.get('distance_to')
 
 class StoredQueryParameters(RequestForm):
     stored_query_id = f.CharField(required=False)
@@ -288,6 +291,7 @@ class GeoDjangoWFSAdapter(WFSAdapter):
         start_index = parms.cleaned_data['start_index']
         srs_name = parms.cleaned_data['srs_name'] # assume bbox is in this
         srs_format = parms.cleaned_data['srs_format'] # this can be proj, None (srid), srid, or wkt.
+        d_to = parms.cleaned_data['distance_to'] # this is a json 'point' and 'distance' 
         
         model = self.models[type_names[0]] # support only the first type-name for now.
         geometry_field = self.geometries[type_names[0]]
@@ -306,6 +310,9 @@ class GeoDjangoWFSAdapter(WFSAdapter):
         if flt:
             flt = json.loads(flt)
             query_set = query_set.filter(**flt)
+
+        if d_to:
+            query_set = query_set.distance(GEOSGeometry(d_to))
 
         if sort_by and ',' in sort_by:
             sort_by = sort_by.split(',')
@@ -502,7 +509,9 @@ class GetFeatureMixin(WFSBase):
                 conn = drv.Open(connection_string)
 
                 # Put the QuerySet into a layer the hard way.
-                layer = conn.ExecuteSQL(query)
+                #   With the addition of the GEOSGeometry as a parameter, force the query into a 'str',
+                #   vs. a tuple or unicode (u'') string.
+                layer = conn.ExecuteSQL(str(query))
             elif db_params['ENGINE'].endswith('spatialite'):
                 # This works the same way as the if-statement above.
                 # todo replace this with the sqlite version of the same thing for preventing SQL injection attacks
